@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -82,7 +83,7 @@ func NewPasswordCredentials(password string) *DBCredentials {
 
 //ParseKeyFile returns the hashed key from a key file at the path specified by location, parsing xml if needed
 func ParseKeyFile(location string) ([]byte, error) {
-	r, err := regexp.Compile("<data>(.+)<\\/data>")
+	r, err := regexp.Compile("(?i)<data>(.+)<\\/data>")
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +97,11 @@ func ParseKeyFile(location string) ([]byte, error) {
 	}
 	if r.Match(data) { //If keyfile is in xml form, extract key data
 		data = r.FindSubmatch(data)[1]
+	}
+
+	if decoded, err := base64.StdEncoding.DecodeString(string(data)); err == nil {
+		sum := []byte(decoded)
+		return sum[:], nil
 	}
 	sum := sha256.Sum256(data)
 	return sum[:], nil
